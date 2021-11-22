@@ -4,10 +4,17 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/gorilla/sessions"
+	"github.com/labstack/echo-contrib/session"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/labstack/gommon/log"
 	traq "github.com/sapphi-red/go-traq"
+)
+
+const (
+	oauthCodeRedirect  = "/https://q.trap.jp/api/v3/oauth2/authorize"
+	oauthTokenRedirect = "/https://q.trap.jp/api/v3/oauth2/token"
 )
 
 type Router struct {
@@ -21,10 +28,13 @@ type Redirect struct {
 
 func SetupRouter() *Router {
 	client := traq.NewAPIClient(traq.NewConfiguration())
+
 	e := echo.New()
 	e.Logger.SetLevel(log.DEBUG)
 	e.Logger.SetHeader("${time_rfc3339} ${prefix} ${short_file} ${line} |")
 	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{Format: "${time_rfc3339} method = ${method} | uri = ${uri} | status = ${status} ${error}\n"}))
+
+	e.Use(session.Middleware(sessions.NewCookieStore([]byte("secret"))))
 
 	r := &Router{cli: client, e: e}
 
@@ -47,11 +57,18 @@ func (r *Router) addOauthRoutes(group *echo.Group) {
 }
 
 func (r *Router) getMeHandler(c echo.Context) error {
-	auth := context.WithValue(context.Background(), traq.ContextAccessToken, "")
+	sess, _ := session.Get("session", c)
+
+	accessToken := sess.Values[traq.ContextAccessToken]
+	if accessToken == nil {
+		return c.JSON(http.StatusSeeOther, Redirect{Dist: oauthCodeRedirect})
+	}
+
+	auth := context.WithValue(context.Background(), traq.ContextAccessToken, accessToken)
 
 	v, res, err := r.cli.MeApi.GetMe(auth)
 	if err != nil || res.StatusCode != http.StatusOK {
-		return c.JSON(http.StatusSeeOther, Redirect{Dist: "/https://q.trap.jp/api/v3/oauth2/authorize"})
+		return c.JSON(http.StatusSeeOther, Redirect{Dist: oauthCodeRedirect})
 	}
 
 	return c.JSON(http.StatusOK, v)
