@@ -2,9 +2,11 @@ package router
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	"github.com/gorilla/sessions"
+	"github.com/hackathon-21winter-05/oauth_ws_practice/config"
 	"github.com/labstack/echo-contrib/session"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -18,15 +20,16 @@ const (
 )
 
 type Router struct {
-	cli *traq.APIClient
-	e   *echo.Echo
+	conf *config.Config
+	cli  *traq.APIClient
+	e    *echo.Echo
 }
 
 type Redirect struct {
-	Dist string `json:"dist"`
+	URI string `json:"dist"`
 }
 
-func SetupRouter() *Router {
+func SetupRouter(conf *config.Config) *Router {
 	client := traq.NewAPIClient(traq.NewConfiguration())
 
 	e := echo.New()
@@ -36,7 +39,11 @@ func SetupRouter() *Router {
 
 	e.Use(session.Middleware(sessions.NewCookieStore([]byte("secret"))))
 
-	r := &Router{cli: client, e: e}
+	r := &Router{
+		conf: conf,
+		cli:  client,
+		e:    e,
+	}
 
 	api := r.e.Group("/api")
 	api.GET("/ping", func(c echo.Context) error {
@@ -61,14 +68,14 @@ func (r *Router) getMeHandler(c echo.Context) error {
 
 	accessToken := sess.Values[traq.ContextAccessToken]
 	if accessToken == nil {
-		return c.JSON(http.StatusSeeOther, Redirect{Dist: oauthCodeRedirect})
+		return c.JSON(http.StatusSeeOther, Redirect{URI: oauthCodeRedirect})
 	}
 
 	auth := context.WithValue(context.Background(), traq.ContextAccessToken, accessToken)
 
 	v, res, err := r.cli.MeApi.GetMe(auth)
 	if err != nil || res.StatusCode != http.StatusOK {
-		return c.JSON(http.StatusSeeOther, Redirect{Dist: oauthCodeRedirect})
+		return c.JSON(http.StatusSeeOther, Redirect{URI: fmt.Sprintf("%s?response_type=code&client_id=%s", oauthCodeRedirect, r.conf.ClientID)})
 	}
 
 	return c.JSON(http.StatusOK, v)
