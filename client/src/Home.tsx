@@ -24,10 +24,11 @@ const Home = () => {
           count is: {count}
         </button>
       </p>
-      <p>
-        Hello, {loggedIn && <img src="/api/icon" alt="icon" width="50" />}{" "}
-        {username}
-      </p>
+      {loggedIn && (
+        <p>
+          {"Hello,"} <img src="/api/icon" alt="icon" width="50" /> {username}
+        </p>
+      )}
       <p>
         Edit <code>App.tsx</code> and save to test HMR updates.
       </p>
