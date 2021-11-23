@@ -8,7 +8,7 @@ import (
 )
 
 type Config struct {
-	ClientID string `json:"client_id"`
+	Client_ID string `json:"client_id"`
 }
 
 func GetConfig() (*Config, error) {
