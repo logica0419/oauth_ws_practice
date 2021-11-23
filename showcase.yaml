@@ -1,0 +1,10 @@
+type: "runtime"
+startup: |
+  cd client && npm ci && npm run build
+  go mod download
+entrypoint: go run ./*.go
+http_proxy: 7070
+https: "hard"
+cname: hack-21win-05-practice.trap.games
+branch:
+  main: null
