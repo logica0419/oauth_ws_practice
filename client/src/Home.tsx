@@ -14,7 +14,7 @@ const Home = () => {
       setLoggedIn(true);
     })
     .catch((err) => {
-      document.location.href = err.response.data.dist;
+      document.location.href = err.response.data.uri;
     });
 
   return (
