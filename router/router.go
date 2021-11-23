@@ -2,6 +2,8 @@ package router
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/base64"
 	"fmt"
 	"net/http"
 	"time"
@@ -14,6 +16,7 @@ import (
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/labstack/gommon/log"
 	traq "github.com/sapphi-red/go-traq"
+	"github.com/thanhpk/randstr"
 )
 
 const oauthCodeRedirect = "https://q.trap.jp/api/v3/oauth2/authorize"
@@ -25,7 +28,7 @@ type Router struct {
 }
 
 type Redirect struct {
-	URI string `json:"dist"`
+	URI string `json:"uri"`
 }
 
 func SetupRouter(conf *config.Config) *Router {
@@ -62,7 +65,7 @@ func (r *Router) Start() {
 func (r *Router) getIconHandler(c echo.Context) error {
 	sess, _ := session.Get("session", c)
 
-	accessToken := sess.Values["accessToken"]
+	accessToken := sess.Values["accessToken"].(string)
 	auth := context.WithValue(context.Background(), traq.ContextAccessToken, accessToken)
 
 	v, res, err := r.cli.MeApi.GetMyIcon(auth)
@@ -93,7 +96,24 @@ func (r *Router) getMeHandler(c echo.Context) error {
 	return c.JSON(http.StatusOK, v)
 
 redirect:
-	return c.JSON(http.StatusSeeOther, Redirect{URI: fmt.Sprintf("%s?response_type=code&client_id=%s", oauthCodeRedirect, r.conf.Client_ID)})
+	verifier := randstr.String(64)
+	hash := sha256.Sum256([]byte(verifier))
+	challenge := base64.RawURLEncoding.EncodeToString(hash[:])
+
+	sess.Values["verifier"] = verifier
+	sess.Options = &sessions.Options{
+		Path:     "/",
+		MaxAge:   86400 * 7,
+		HttpOnly: true,
+	}
+	err = sess.Save(c.Request(), c.Response())
+	if err != nil {
+		return c.String(http.StatusInternalServerError, err.Error())
+	}
+
+	return c.JSON(http.StatusSeeOther, Redirect{
+		URI: fmt.Sprintf("%s?response_type=code&client_id=%s&code_challenge=%s&code_challenge_method=S256", oauthCodeRedirect, r.conf.Client_ID, challenge),
+	})
 }
 
 func (r *Router) postOAuthCodeHandler(c echo.Context) error {
@@ -106,12 +126,11 @@ func (r *Router) postOAuthCodeHandler(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, err)
 	}
 
-	log.Printf("%s", code.Code)
-
-	opts := &traq.Oauth2ApiPostOAuth2TokenOpts{Code: optional.NewString(code.Code), ClientId: optional.NewString(r.conf.Client_ID)}
+	verifier := sess.Values["verifier"].(string)
+	opts := &traq.Oauth2ApiPostOAuth2TokenOpts{Code: optional.NewString(code.Code), ClientId: optional.NewString(r.conf.Client_ID), CodeVerifier: optional.NewString(verifier)}
 	token, res, err := r.cli.Oauth2Api.PostOAuth2Token(context.Background(), "authorization_code", opts)
 	if err != nil {
-		return c.String(http.StatusInternalServerError, err.Error())
+		return c.JSON(http.StatusInternalServerError, err)
 	}
 	if token.AccessToken == "" || res.StatusCode >= 400 {
 		return c.String(http.StatusInternalServerError, "failed to get access token")
