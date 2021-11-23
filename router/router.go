@@ -47,6 +47,7 @@ func SetupRouter(conf *config.Config) *Router {
 		e:    e,
 	}
 
+	r.e.Static("/", "client/dist")
 	api := r.e.Group("/api")
 	api.GET("/ping", func(c echo.Context) error {
 		return c.String(http.StatusOK, "pong")
