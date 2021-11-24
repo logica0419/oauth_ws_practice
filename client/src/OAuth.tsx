@@ -1,4 +1,5 @@
 import axios from "axios";
+import { useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
 const OAuth = () => {
@@ -6,14 +7,16 @@ const OAuth = () => {
   const code = searchParams.get("code");
   const navigate = useNavigate();
 
-  axios
-    .post("/api/code", { code: code })
-    .then(() => {
-      navigate("/");
-    })
-    .catch(() => {
-      alert("failed to login");
-    });
+  useEffect(() => {
+    axios
+      .post("/api/code", { code: code })
+      .then(() => {
+        navigate("/");
+      })
+      .catch(() => {
+        alert("failed to login");
+      });
+  }, []);
 
   return <p>Authenticating...</p>;
 };

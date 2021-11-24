@@ -1,21 +1,23 @@
 import axios from "axios";
 import "./App.css";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const Home = () => {
   const [loggedIn, setLoggedIn] = useState(false);
   const [username, setUsername] = useState("");
   const [count, setCount] = useState(0);
 
-  axios
-    .get("/api/me")
-    .then((res) => {
-      setUsername(res.data.name);
-      setLoggedIn(true);
-    })
-    .catch((err) => {
-      document.location.href = err.response.data.uri;
-    });
+  useEffect(() => {
+    axios
+      .get("/api/me")
+      .then((res) => {
+        setUsername(res.data.name);
+        setLoggedIn(true);
+      })
+      .catch((err) => {
+        document.location.href = err.response.data.uri;
+      });
+  }, []);
 
   return (
     <>
