@@ -12,8 +12,6 @@ import (
 	traq "github.com/sapphi-red/go-traq"
 )
 
-const oauthCodeRedirect = "https://q.trap.jp/api/v3/oauth2/authorize"
-
 type Router struct {
 	conf *config.Config
 	cli  *traq.APIClient

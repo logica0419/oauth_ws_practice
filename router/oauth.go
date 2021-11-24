@@ -15,6 +15,8 @@ import (
 	"github.com/thanhpk/randstr"
 )
 
+const oauthCodeRedirect = "https://q.trap.jp/api/v3/oauth2/authorize"
+
 func (r *Router) meRedirectHandler(c echo.Context, sess *sessions.Session) error {
 	verifier := randstr.String(64)
 	hash := sha256.Sum256([]byte(verifier))

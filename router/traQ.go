@@ -3,7 +3,6 @@ package router
 import (
 	"context"
 	"net/http"
-	"time"
 
 	"github.com/labstack/echo-contrib/session"
 	"github.com/labstack/echo/v4"
@@ -21,8 +20,7 @@ func (r *Router) getIconHandler(c echo.Context) error {
 		return c.String(http.StatusBadRequest, err.Error())
 	}
 
-	http.ServeContent(c.Response(), c.Request(), "icon.png", time.Now(), v)
-	return nil
+	return c.Stream(http.StatusOK, "image/png", v)
 }
 
 func (r *Router) getMeHandler(c echo.Context) error {
