@@ -39,12 +39,15 @@ func SetupRouter(conf *config.Config) *Router {
 	}
 
 	api := r.e.Group("/api")
-	api.GET("/ping", func(c echo.Context) error {
-		return c.String(http.StatusOK, "pong")
-	})
-	api.GET("/me", r.getMeHandler)
-	api.GET("/icon", r.getIconHandler)
-	api.POST("/code", r.postOAuthCodeHandler)
+	{
+		api.GET("/ping", func(c echo.Context) error {
+			return c.String(http.StatusOK, "pong")
+		})
+		api.GET("/me", r.getMeHandler)
+		api.GET("/icon", r.getIconHandler)
+		api.GET("/redirect", r.getRedirectHandler)
+		api.POST("/code", r.postOAuthCodeHandler)
+	}
 
 	r.e.Static("/", "client/dist")
 	r.e.File("/oauth", "client/dist/index.html")

@@ -17,7 +17,9 @@ import (
 
 const oauthCodeRedirect = "https://q.trap.jp/api/v3/oauth2/authorize"
 
-func (r *Router) meRedirectHandler(c echo.Context, sess *sessions.Session) error {
+func (r *Router) getRedirectHandler(c echo.Context) error {
+	sess, _ := session.Get("session", c)
+
 	verifier := randstr.String(64)
 	hash := sha256.Sum256([]byte(verifier))
 	challenge := base64.RawURLEncoding.EncodeToString(hash[:])

@@ -31,7 +31,7 @@ func (r *Router) getMeHandler(c echo.Context) error {
 
 	v, res, err := r.cli.MeApi.GetMe(auth)
 	if err != nil || res.StatusCode != http.StatusOK {
-		return r.meRedirectHandler(c, sess)
+		return c.Redirect(http.StatusSeeOther, "/api/redirect")
 	}
 
 	return c.JSON(http.StatusOK, v)
