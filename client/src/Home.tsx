@@ -1,6 +1,6 @@
 import axios from "axios";
 import "./App.css";
-import { Fragment, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { RWS, SetWSOnMessage } from "./ws";
 
 const Home = () => {
@@ -8,7 +8,7 @@ const Home = () => {
   const [username, setUsername] = useState("");
   const [count, setCount] = useState(0);
   const [draft, setDraft] = useState("");
-  const [messages, setMessages] = useState<Array<String>>([]);
+  const [messages, setMessages] = useState<String[]>([]);
 
   useEffect(() => {
     axios
@@ -22,14 +22,12 @@ const Home = () => {
           location.href = res.data.uri;
         });
       });
-
-    SetWSOnMessage(RWS, (evt) => {
-      let newMessages = messages;
-      newMessages.push(evt.data);
-
-      setMessages(newMessages);
-    });
   }, []);
+
+  SetWSOnMessage(RWS, (evt) => {
+    const newMessages: String[] = [...messages, evt.data];
+    setMessages(newMessages);
+  });
 
   const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setDraft(e.target.value);
