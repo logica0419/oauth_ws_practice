@@ -1,11 +1,14 @@
 import axios from "axios";
 import "./App.css";
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
+import { RWS, SetWSOnMessage } from "./ws";
 
 const Home = () => {
   const [loggedIn, setLoggedIn] = useState(false);
   const [username, setUsername] = useState("");
   const [count, setCount] = useState(0);
+  const [draft, setDraft] = useState("");
+  const [messages, setMessages] = useState<Array<String>>([]);
 
   useEffect(() => {
     axios
@@ -19,7 +22,24 @@ const Home = () => {
           location.href = res.data.uri;
         });
       });
+
+    SetWSOnMessage(RWS, (evt) => {
+      let newMessages = messages;
+      newMessages.push(evt.data);
+
+      setMessages(newMessages);
+    });
   }, []);
+
+  const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setDraft(e.target.value);
+  };
+
+  const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    RWS.send(username + ": " + draft);
+    setDraft("");
+  };
 
   return (
     <>
@@ -33,26 +53,13 @@ const Home = () => {
           {"Hello,"} <img src="/api/icon" alt="icon" width="50" /> {username}
         </p>
       )}
-      <p>
-        Edit <code>App.tsx</code> and save to test HMR updates.
-      </p>
-      <p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer">
-          Learn React
-        </a>
-        {" | "}
-        <a
-          className="App-link"
-          href="https://vitejs.dev/guide/features.html"
-          target="_blank"
-          rel="noopener noreferrer">
-          Vite Docs
-        </a>
-      </p>
+      {messages.map((msg, index) => {
+        return <div key={index}> {msg} </div>;
+      })}
+      <form onSubmit={onSubmit}>
+        <input type="text" value={draft} onChange={onChange} />
+        <input type="submit" />
+      </form>
     </>
   );
 };
