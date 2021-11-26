@@ -16,6 +16,7 @@ type Router struct {
 	conf *config.Config
 	cli  *traq.APIClient
 	e    *echo.Echo
+	s    *streamer
 }
 
 type Redirect struct {
@@ -24,6 +25,8 @@ type Redirect struct {
 
 func SetupRouter(conf *config.Config) *Router {
 	client := traq.NewAPIClient(traq.NewConfiguration())
+
+	s := setupStreamer()
 
 	e := echo.New()
 	e.Logger.SetLevel(log.DEBUG)
@@ -36,6 +39,7 @@ func SetupRouter(conf *config.Config) *Router {
 		conf: conf,
 		cli:  client,
 		e:    e,
+		s:    s,
 	}
 
 	api := r.e.Group("/api")
@@ -46,6 +50,7 @@ func SetupRouter(conf *config.Config) *Router {
 		api.GET("/me", r.getMeHandler)
 		api.GET("/icon", r.getIconHandler)
 		api.GET("/redirect", r.getRedirectHandler)
+		api.GET("/ws", r.getWebSocketHandler)
 		api.POST("/code", r.postOAuthCodeHandler)
 	}
 
