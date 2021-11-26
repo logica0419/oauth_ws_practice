@@ -3,20 +3,22 @@ package router
 import (
 	"net/http"
 
+	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	"github.com/labstack/echo/v4"
 )
 
 type client struct {
+	id       uuid.UUID
 	conn     *websocket.Conn
 	receiver *chan string
 	sender   chan string
-	close    chan bool
+	closer   chan bool
 }
 
 type streamer struct {
-	clients  []*client
-	receiver chan string
+	clients       map[uuid.UUID]*client
+	receiveBuffer chan string
 }
 
 var messages = []string{}
@@ -29,7 +31,16 @@ func (r *Router) getWebSocketHandler(c echo.Context) error {
 	}
 	defer conn.Close()
 
-	cli := &client{conn: conn, receiver: &r.s.receiver, sender: make(chan string), close: make(chan bool)}
+	clientID := uuid.New()
+
+	cli := &client{
+		id:       clientID,
+		conn:     conn,
+		receiver: &r.s.receiveBuffer,
+		sender:   make(chan string),
+		closer:   make(chan bool),
+	}
+
 	go cli.serve()
 	go cli.listen()
 
@@ -37,17 +48,19 @@ func (r *Router) getWebSocketHandler(c echo.Context) error {
 		cli.sender <- mes
 	}
 
-	r.s.clients = append(r.s.clients, cli)
+	r.s.clients[clientID] = cli
 
-	<-cli.close
+	<-cli.closer
+
+	delete(r.s.clients, clientID)
 
 	return c.NoContent(http.StatusOK)
 }
 
 func setupStreamer() *streamer {
 	s := &streamer{
-		clients:  []*client{},
-		receiver: make(chan string),
+		clients:       map[uuid.UUID]*client{},
+		receiveBuffer: make(chan string),
 	}
 
 	go s.listen()
@@ -57,7 +70,7 @@ func setupStreamer() *streamer {
 
 func (s *streamer) listen() {
 	for {
-		mes := <-s.receiver
+		mes := <-s.receiveBuffer
 		messages = append(messages, mes)
 		s.sendAll(mes)
 	}
@@ -73,7 +86,7 @@ func (cli *client) listen() {
 	for {
 		_, message, err := cli.conn.ReadMessage()
 		if err != nil {
-			cli.close <- true
+			cli.closer <- true
 			break
 		}
 
@@ -86,7 +99,7 @@ func (cli *client) serve() {
 		mes := <-cli.sender
 		err := cli.conn.WriteMessage(websocket.TextMessage, []byte(mes))
 		if err != nil {
-			cli.close <- true
+			cli.closer <- true
 			break
 		}
 	}

@@ -4,6 +4,7 @@ go 1.17
 
 require (
 	github.com/antihax/optional v1.0.0
+	github.com/google/uuid v1.1.2
 	github.com/gorilla/sessions v1.2.1
 	github.com/gorilla/websocket v0.0.0-20170926233335-4201258b820c
 	github.com/labstack/echo-contrib v0.11.0
