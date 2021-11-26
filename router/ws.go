@@ -2,6 +2,7 @@ package router
 
 import (
 	"net/http"
+	"sync"
 
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
@@ -21,7 +22,12 @@ type streamer struct {
 	receiveBuffer chan string
 }
 
-var messages = []string{}
+type messagesStruct struct {
+	messages []string
+	sync.RWMutex
+}
+
+var messages = messagesStruct{messages: []string{}}
 
 func (r *Router) getWebSocketHandler(c echo.Context) error {
 	upgrader := websocket.Upgrader{}
@@ -44,9 +50,11 @@ func (r *Router) getWebSocketHandler(c echo.Context) error {
 	go cli.serve()
 	go cli.listen()
 
-	for _, mes := range messages {
+	messages.RLock()
+	for _, mes := range messages.messages {
 		cli.sender <- mes
 	}
+	messages.RUnlock()
 
 	r.s.clients[clientID] = cli
 
@@ -69,9 +77,12 @@ func setupStreamer() *streamer {
 }
 
 func (s *streamer) listen() {
+	messages.Lock()
+	defer messages.Unlock()
+
 	for {
 		mes := <-s.receiveBuffer
-		messages = append(messages, mes)
+		messages.messages = append(messages.messages, mes)
 		s.sendAll(mes)
 	}
 }
