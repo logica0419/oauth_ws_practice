@@ -35,7 +35,7 @@ func (r *Router) getRedirectHandler(c echo.Context) error {
 		return c.String(http.StatusInternalServerError, err.Error())
 	}
 
-	return c.JSON(http.StatusSeeOther, Redirect{
+	return c.JSON(http.StatusOK, Redirect{
 		URI: fmt.Sprintf("%s?response_type=code&client_id=%s&code_challenge=%s&code_challenge_method=S256", oauthCodeRedirect, r.conf.Client_ID, challenge),
 	})
 }
@@ -71,5 +71,5 @@ func (r *Router) postOAuthCodeHandler(c echo.Context) error {
 		return c.String(http.StatusInternalServerError, err.Error())
 	}
 
-	return c.NoContent(http.StatusOK)
+	return c.NoContent(http.StatusCreated)
 }

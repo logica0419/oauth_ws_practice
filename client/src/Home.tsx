@@ -14,8 +14,10 @@ const Home = () => {
         setUsername(res.data.name);
         setLoggedIn(true);
       })
-      .catch((err) => {
-        location.href = err.response.data.uri;
+      .catch(() => {
+        axios.get("/api/redirect").then((res) => {
+          location.href = res.data.uri;
+        });
       });
   }, []);
 
