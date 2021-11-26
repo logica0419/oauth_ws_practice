@@ -61,5 +61,6 @@ func SetupRouter(conf *config.Config) *Router {
 }
 
 func (r *Router) Start() {
+	r.s.start()
 	r.e.Logger.Panic(r.e.Start(":7070"))
 }

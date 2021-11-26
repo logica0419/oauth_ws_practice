@@ -71,18 +71,21 @@ func setupStreamer() *streamer {
 		receiveBuffer: make(chan string),
 	}
 
-	go s.listen()
-
 	return s
 }
 
-func (s *streamer) listen() {
-	messages.Lock()
-	defer messages.Unlock()
+func (s *streamer) start() {
+	go s.listen()
+}
 
+func (s *streamer) listen() {
 	for {
 		mes := <-s.receiveBuffer
+
+		messages.Lock()
 		messages.messages = append(messages.messages, mes)
+		messages.Unlock()
+
 		s.sendAll(mes)
 	}
 }
