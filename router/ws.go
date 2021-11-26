@@ -2,6 +2,7 @@ package router
 
 import (
 	"net/http"
+	"sync"
 
 	"github.com/gorilla/websocket"
 	"github.com/labstack/echo/v4"
@@ -10,7 +11,7 @@ import (
 type client struct {
 	conn     *websocket.Conn
 	receiver *chan string
-	sender   chan []string
+	sender   chan string
 }
 
 type streamer struct {
@@ -27,13 +28,19 @@ func (r *Router) getWebSocketHandler(c echo.Context) error {
 		return c.String(http.StatusInternalServerError, err.Error())
 	}
 
-	client := &client{conn: conn, receiver: &r.s.receiver, sender: make(chan []string)}
-	go client.listen()
-	go client.serve()
+	cli := &client{conn: conn, receiver: &r.s.receiver, sender: make(chan string)}
+	go cli.listen()
+	go cli.serve()
 
-	client.sender <- messages
+	for _, mes := range messages {
+		cli.sender <- mes
+	}
 
-	r.s.clients = append(r.s.clients, client)
+	r.s.clients = append(r.s.clients, cli)
+
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+	wg.Wait()
 
 	return c.NoContent(http.StatusOK)
 }
@@ -51,14 +58,15 @@ func setupStreamer() *streamer {
 
 func (s *streamer) listen() {
 	for {
-		messages = append(messages, <-s.receiver)
-		s.sendAll(messages)
+		mes := <-s.receiver
+		messages = append(messages, mes)
+		s.sendAll(mes)
 	}
 }
 
-func (s *streamer) sendAll(msg []string) {
+func (s *streamer) sendAll(mes string) {
 	for _, client := range s.clients {
-		client.sender <- msg
+		client.sender <- mes
 	}
 }
 
@@ -75,7 +83,8 @@ func (cli *client) listen() {
 
 func (cli *client) serve() {
 	for {
-		err := cli.conn.WriteJSON(<-cli.sender)
+		mes := <-cli.sender
+		err := cli.conn.WriteMessage(websocket.TextMessage, []byte(mes))
 		if err != nil {
 			break
 		}
