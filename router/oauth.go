@@ -53,11 +53,8 @@ func (r *Router) postOAuthCodeHandler(c echo.Context) error {
 	verifier := sess.Values["verifier"].(string)
 	opts := &traq.Oauth2ApiPostOAuth2TokenOpts{Code: optional.NewString(code.Code), ClientId: optional.NewString(r.conf.Client_ID), CodeVerifier: optional.NewString(verifier)}
 	token, res, err := r.cli.Oauth2Api.PostOAuth2Token(context.Background(), "authorization_code", opts)
-	if err != nil {
-		return c.JSON(http.StatusInternalServerError, err)
-	}
-	if token.AccessToken == "" || res.StatusCode >= 400 {
-		return c.String(http.StatusInternalServerError, "failed to get access token")
+	if err != nil || token.AccessToken == "" || res.StatusCode >= 400 {
+		return c.String(res.StatusCode, err.Error())
 	}
 
 	sess.Values["accessToken"] = token.AccessToken

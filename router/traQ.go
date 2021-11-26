@@ -17,10 +17,10 @@ func (r *Router) getIconHandler(c echo.Context) error {
 
 	v, res, err := r.cli.MeApi.GetMyIcon(auth)
 	if err != nil || res.StatusCode != http.StatusOK {
-		return c.String(http.StatusBadRequest, err.Error())
+		return c.String(res.StatusCode, err.Error())
 	}
 
-	return c.Stream(http.StatusOK, "image/png", v)
+	return c.Stream(res.StatusCode, "image/png", v)
 }
 
 func (r *Router) getMeHandler(c echo.Context) error {
@@ -31,8 +31,8 @@ func (r *Router) getMeHandler(c echo.Context) error {
 
 	v, res, err := r.cli.MeApi.GetMe(auth)
 	if err != nil || res.StatusCode != http.StatusOK {
-		return c.String(http.StatusForbidden, err.Error())
+		return c.String(res.StatusCode, err.Error())
 	}
 
-	return c.JSON(http.StatusOK, v)
+	return c.JSON(res.StatusCode, v)
 }
