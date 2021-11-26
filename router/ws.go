@@ -86,6 +86,7 @@ func (cli *client) serve() {
 		mes := <-cli.sender
 		err := cli.conn.WriteMessage(websocket.TextMessage, []byte(mes))
 		if err != nil {
+			cli.close <- true
 			break
 		}
 	}
