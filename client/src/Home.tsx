@@ -1,14 +1,18 @@
 import axios from "axios";
 import "./App.css";
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { RWS, SetWSOnMessage } from "./ws";
 
 const Home = () => {
   const [loggedIn, setLoggedIn] = useState(false);
   const [username, setUsername] = useState("");
-  const [count, setCount] = useState(0);
   const [draft, setDraft] = useState("");
   const [messages, setMessages] = useState<String[]>([]);
+
+  const refContents = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    refContents?.current?.scrollIntoView();
+  }, [messages]);
 
   useEffect(() => {
     axios
@@ -41,22 +45,22 @@ const Home = () => {
 
   return (
     <>
-      <p>
-        <button type="button" onClick={() => setCount((count) => count + 1)}>
-          count is: {count}
-        </button>
-      </p>
+      <h2>Easy WS Messenger</h2>
       {loggedIn && (
-        <p>
-          {"Hello,"} <img src="/api/icon" alt="icon" width="50" /> {username}
-        </p>
+        <div>
+          <img src="/api/icon" alt="icon" width="40" /> {username}
+        </div>
       )}
-      {messages.map((msg, index) => {
-        return <div key={index}> {msg} </div>;
-      })}
+      <div className="mes-list">
+        {messages.map((msg, index) => {
+          return <div key={index}> {msg} </div>;
+        })}
+        <div ref={refContents} />
+      </div>
       <form onSubmit={onSubmit}>
         <input type="text" value={draft} onChange={onChange} />
-        <input type="submit" />
+        &nbsp;
+        <input type="submit" value="Send" />
       </form>
     </>
   );
