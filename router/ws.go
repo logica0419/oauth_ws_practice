@@ -2,7 +2,6 @@ package router
 
 import (
 	"net/http"
-	"sync"
 
 	"github.com/gorilla/websocket"
 	"github.com/labstack/echo/v4"
@@ -12,6 +11,7 @@ type client struct {
 	conn     *websocket.Conn
 	receiver *chan string
 	sender   chan string
+	close    chan bool
 }
 
 type streamer struct {
@@ -27,10 +27,11 @@ func (r *Router) getWebSocketHandler(c echo.Context) error {
 	if err != nil {
 		return c.String(http.StatusInternalServerError, err.Error())
 	}
+	defer conn.Close()
 
-	cli := &client{conn: conn, receiver: &r.s.receiver, sender: make(chan string)}
-	go cli.listen()
+	cli := &client{conn: conn, receiver: &r.s.receiver, sender: make(chan string), close: make(chan bool)}
 	go cli.serve()
+	go cli.listen()
 
 	for _, mes := range messages {
 		cli.sender <- mes
@@ -38,9 +39,7 @@ func (r *Router) getWebSocketHandler(c echo.Context) error {
 
 	r.s.clients = append(r.s.clients, cli)
 
-	wg := &sync.WaitGroup{}
-	wg.Add(1)
-	wg.Wait()
+	<-cli.close
 
 	return c.NoContent(http.StatusOK)
 }
@@ -74,6 +73,7 @@ func (cli *client) listen() {
 	for {
 		_, message, err := cli.conn.ReadMessage()
 		if err != nil {
+			cli.close <- true
 			break
 		}
 
