@@ -1,13 +1,19 @@
 #!/bin/bash
 
-schemeFolders=(rest ws)
-schemes=(rest/me rest/code rest/redirect ws/message)
+sourceDir="../schema/pb"
+distDir="./src/pb"
 
-for schemeFolder in "${schemeFolders[@]}"; do
-  mkdir -p src/pb/"$schemeFolder"
+mapfile -t folders < <(find "${sourceDir}" -type d -printf "%P\\n")
+mapfile -t schemes < <(find "${sourceDir}" -type f -name "*.proto" -printf "%P\\n")
+
+for folder in "${folders[@]}"; do
+  if [ "${folder}" != "" ]; then
+    mkdir -p "${distDir}/${folder}"
+  fi
 done
 
 for scheme in "${schemes[@]}"; do
-  npx pbjs -t static-module -w es6 -o./src/pb/"$scheme".js ../schema/pb/"$scheme".proto
-  npx pbts -o ./src/pb/"$scheme".d.ts ./src/pb/"$scheme".js
+  parsedScheme=$(echo "${scheme}" | cut -f 1 -d ".")
+  npx pbjs -t static-module -w es6 -o "${distDir}/${parsedScheme}".js "${sourceDir}/${parsedScheme}".proto
+  npx pbts -o "${distDir}/${parsedScheme}".d.ts "${distDir}/${parsedScheme}".js
 done
