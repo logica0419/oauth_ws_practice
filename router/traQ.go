@@ -5,10 +5,10 @@ import (
 	"net/http"
 
 	"github.com/hackathon-21winter-05/oauth_ws_practice/model/pb/rest"
+	"github.com/hackathon-21winter-05/oauth_ws_practice/router/util"
 	"github.com/labstack/echo-contrib/session"
 	"github.com/labstack/echo/v4"
 	traq "github.com/sapphi-red/go-traq"
-	"google.golang.org/protobuf/proto"
 )
 
 func (r *Router) getIconHandler(c echo.Context) error {
@@ -36,14 +36,9 @@ func (r *Router) getMeHandler(c echo.Context) error {
 		return c.String(res.StatusCode, err.Error())
 	}
 
-	meData := rest.GetMeResponse{
+	meData := &rest.GetMeResponse{
 		Name: v.Name,
 	}
 
-	buffer, err := proto.Marshal(&meData)
-	if err != nil {
-		return c.String(http.StatusInternalServerError, err.Error())
-	}
-
-	return c.Blob(http.StatusOK, "application/octet-stream", buffer)
+	return util.SendProtobuf(c, http.StatusOK, meData)
 }

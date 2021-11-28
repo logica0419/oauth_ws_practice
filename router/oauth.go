@@ -1,22 +1,20 @@
 package router
 
 import (
-	"bytes"
 	"context"
 	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
-	"io"
 	"net/http"
 
 	"github.com/antihax/optional"
 	"github.com/gorilla/sessions"
 	"github.com/hackathon-21winter-05/oauth_ws_practice/model/pb/rest"
+	"github.com/hackathon-21winter-05/oauth_ws_practice/router/util"
 	"github.com/labstack/echo-contrib/session"
 	"github.com/labstack/echo/v4"
 	traq "github.com/sapphi-red/go-traq"
 	"github.com/thanhpk/randstr"
-	"google.golang.org/protobuf/proto"
 )
 
 const oauthCodeRedirect = "https://q.trap.jp/api/v3/oauth2/authorize"
@@ -40,31 +38,23 @@ func (r *Router) getRedirectHandler(c echo.Context) error {
 	}
 
 	uri := fmt.Sprintf("%s?response_type=code&client_id=%s&code_challenge=%s&code_challenge_method=S256", oauthCodeRedirect, r.conf.Client_ID, challenge)
-	redirectData := rest.GetRedirectResponse{
+	redirectData := &rest.GetRedirectResponse{
 		RedirectUri: uri,
 	}
-	buffer, err := proto.Marshal(&redirectData)
-	if err != nil {
-		return c.String(http.StatusInternalServerError, err.Error())
-	}
 
-	return c.Blob(http.StatusOK, "application/octet-stream", buffer)
+	return util.SendProtobuf(c, http.StatusOK, redirectData)
 }
 
 func (r *Router) postOAuthCodeHandler(c echo.Context) error {
-	sess, _ := session.Get("session", c)
+	sess, err := session.Get("session", c)
+	if err != nil {
+		return c.String(http.StatusBadRequest, err.Error())
+	}
 
 	codeData := &rest.PostCodeRequest{}
-
-	defer c.Request().Body.Close()
-	buffer := new(bytes.Buffer)
-	_, err := io.Copy(buffer, c.Request().Body)
+	err = util.BindProtobuf(c, codeData)
 	if err != nil {
-		return c.String(http.StatusInternalServerError, err.Error())
-	}
-	err = proto.Unmarshal(buffer.Bytes(), codeData)
-	if err != nil {
-		return c.String(http.StatusInternalServerError, err.Error())
+		return c.String(http.StatusBadRequest, err.Error())
 	}
 
 	verifier := sess.Values["verifier"].(string)
