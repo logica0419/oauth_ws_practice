@@ -5,6 +5,7 @@ import { RWS, SetWSOnMessage } from "./ws";
 import { GetRedirectResponse } from "./pb/rest/redirect";
 import { WsMessage } from "./pb/ws/message";
 import { GetMeResponse } from "./pb/rest/me";
+import Message from "./Message";
 
 const Home = () => {
   const [loggedIn, setLoggedIn] = useState(false);
@@ -70,11 +71,7 @@ const Home = () => {
       )}
       <div className="mes-list">
         {messages.map((msg, index) => {
-          return (
-            <div key={index}>
-              {msg.UserID}: {msg.Message}
-            </div>
-          );
+          return <Message message={msg} />;
         })}
         <div ref={refContents} />
       </div>
