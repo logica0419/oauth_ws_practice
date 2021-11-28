@@ -1,0 +1,5 @@
+syntax = "proto3";
+
+option go_package = "github.com/hackathon-21winter-05/oauth_ws_practice/model/pb/rest";
+
+message GetRedirectResponse { string redirect_uri = 1; }

@@ -2,12 +2,15 @@ import axios from "axios";
 import "./App.css";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { RWS, SetWSOnMessage } from "./ws";
+import { GetRedirectResponse } from "./pb/rest/redirect";
+import { WsMessage } from "./pb/ws/message";
+import { GetMeResponse } from "./pb/rest/me";
 
 const Home = () => {
   const [loggedIn, setLoggedIn] = useState(false);
   const [username, setUsername] = useState("");
   const [draft, setDraft] = useState("");
-  const [messages, setMessages] = useState<String[]>([]);
+  const [messages, setMessages] = useState<WsMessage[]>([]);
 
   const refContents = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
@@ -16,20 +19,28 @@ const Home = () => {
 
   useEffect(() => {
     axios
-      .get("/api/me")
+      .get("/api/me", { responseType: "arraybuffer" })
       .then((res) => {
-        setUsername(res.data.name);
+        const meData = GetMeResponse.decode(new Uint8Array(res.data));
+
         setLoggedIn(true);
+        setUsername(meData.name);
       })
       .catch(() => {
-        axios.get("/api/redirect").then((res) => {
-          location.href = res.data.uri;
-        });
+        axios
+          .get("/api/redirect", { responseType: "arraybuffer" })
+          .then((res) => {
+            const redirectData = GetRedirectResponse.decode(
+              new Uint8Array(res.data)
+            );
+            location.href = redirectData.redirectUri;
+          });
       });
   }, []);
 
   SetWSOnMessage(RWS, (evt) => {
-    const newMessages: String[] = [...messages, evt.data];
+    const messageData = WsMessage.decode(new Uint8Array(evt.data));
+    const newMessages: WsMessage[] = [...messages, messageData];
     setMessages(newMessages);
   });
 
@@ -39,7 +50,13 @@ const Home = () => {
 
   const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    RWS.send(username + ": " + draft);
+    const messageData = WsMessage.create({
+      UserID: username,
+      Message: draft,
+    });
+
+    const buffer = WsMessage.encode(messageData).finish();
+    RWS.send(buffer);
     setDraft("");
   };
 
@@ -53,7 +70,11 @@ const Home = () => {
       )}
       <div className="mes-list">
         {messages.map((msg, index) => {
-          return <div key={index}> {msg} </div>;
+          return (
+            <div key={index}>
+              {msg.UserID}: {msg.Message}
+            </div>
+          );
         })}
         <div ref={refContents} />
       </div>

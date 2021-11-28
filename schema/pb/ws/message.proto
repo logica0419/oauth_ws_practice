@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+option go_package = "github.com/hackathon-21winter-05/oauth_ws_practice/model/pb/ws";
+
+message WsMessage {
+  string UserID = 1;
+  string Message = 2;
+}

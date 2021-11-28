@@ -8,6 +8,8 @@ export const WSConnect = () => {
       "/api/ws"
   );
 
+  rws.binaryType = "arraybuffer";
+
   rws.onclose = () => {
     console.log("WebSocket disconnected");
   };

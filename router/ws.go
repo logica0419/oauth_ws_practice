@@ -12,22 +12,22 @@ import (
 type client struct {
 	id       uuid.UUID
 	conn     *websocket.Conn
-	receiver *chan string
-	sender   chan string
+	receiver *chan []byte
+	sender   chan []byte
 	closer   chan bool
 }
 
 type streamer struct {
 	clients       map[uuid.UUID]*client
-	receiveBuffer chan string
+	receiveBuffer chan []byte
 }
 
 type messagesStruct struct {
-	messages []string
+	messages [][]byte
 	sync.RWMutex
 }
 
-var messages = messagesStruct{messages: []string{}}
+var messages = messagesStruct{messages: [][]byte{}}
 
 func (r *Router) getWebSocketHandler(c echo.Context) error {
 	upgrader := websocket.Upgrader{}
@@ -43,7 +43,7 @@ func (r *Router) getWebSocketHandler(c echo.Context) error {
 		id:       clientID,
 		conn:     conn,
 		receiver: &r.s.receiveBuffer,
-		sender:   make(chan string),
+		sender:   make(chan []byte),
 		closer:   make(chan bool),
 	}
 
@@ -68,7 +68,7 @@ func (r *Router) getWebSocketHandler(c echo.Context) error {
 func setupStreamer() *streamer {
 	s := &streamer{
 		clients:       map[uuid.UUID]*client{},
-		receiveBuffer: make(chan string),
+		receiveBuffer: make(chan []byte),
 	}
 
 	return s
@@ -90,7 +90,7 @@ func (s *streamer) listen() {
 	}
 }
 
-func (s *streamer) sendAll(mes string) {
+func (s *streamer) sendAll(mes []byte) {
 	for _, client := range s.clients {
 		client.sender <- mes
 	}
@@ -104,14 +104,14 @@ func (cli *client) listen() {
 			break
 		}
 
-		*cli.receiver <- string(message)
+		*cli.receiver <- message
 	}
 }
 
 func (cli *client) serve() {
 	for {
 		mes := <-cli.sender
-		err := cli.conn.WriteMessage(websocket.TextMessage, []byte(mes))
+		err := cli.conn.WriteMessage(websocket.BinaryMessage, mes)
 		if err != nil {
 			cli.closer <- true
 			break
