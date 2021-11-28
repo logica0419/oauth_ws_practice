@@ -77,7 +77,7 @@ const Home = () => {
       )}
       <div className="mes-list">
         {messages.map((msg, index) => {
-          return <Message message={msg} />;
+          return <Message key={index} message={msg} />;
         })}
         <div ref={refContents} />
       </div>
