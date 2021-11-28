@@ -12,16 +12,14 @@ const OAuth = () => {
     const codeData = PostCodeRequest.create({ code: code });
     const buffer = PostCodeRequest.encode(codeData).finish();
 
-    var xhr = new XMLHttpRequest();
-    xhr.open("POST", "/api/code", false);
-    xhr.addEventListener("load", function () {
-      if (xhr.status < 300) {
+    axios
+      .post("/api/code", new Uint8Array(buffer))
+      .then(() => {
         navigate("/");
-      } else {
-        alert("failed to login");
-      }
-    });
-    xhr.send(buffer);
+      })
+      .catch(() => {
+        alert("failed to get Access Token");
+      });
   }, []);
 
   return <p>Authenticating...</p>;
