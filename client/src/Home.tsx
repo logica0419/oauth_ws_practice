@@ -1,7 +1,7 @@
 import axios from "axios";
 import "./App.css";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { RWS, SetWSOnMessage } from "./ws";
+import { RWS, SetWSOnMessage, SetWSOnOpen } from "./ws";
 import { GetRedirectResponse } from "./pb/rest/redirect";
 import { WsMessage } from "./pb/ws/message";
 import { GetMeResponse } from "./pb/rest/me";
@@ -45,20 +45,26 @@ const Home = () => {
     setMessages(newMessages);
   });
 
+  SetWSOnOpen(RWS, () => {
+    setMessages([]);
+  });
+
   const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setDraft(e.target.value);
   };
 
   const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const messageData = WsMessage.create({
-      UserID: username,
-      Message: draft,
-    });
+    if (!!draft) {
+      const messageData = WsMessage.create({
+        UserID: username,
+        Message: draft,
+      });
 
-    const buffer = WsMessage.encode(messageData).finish();
-    RWS.send(buffer);
-    setDraft("");
+      const buffer = WsMessage.encode(messageData).finish();
+      RWS.send(buffer);
+      setDraft("");
+    }
   };
 
   return (

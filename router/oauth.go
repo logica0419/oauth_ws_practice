@@ -7,7 +7,6 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 
 	"github.com/antihax/optional"
@@ -63,7 +62,6 @@ func (r *Router) postOAuthCodeHandler(c echo.Context) error {
 	if err != nil {
 		return c.String(http.StatusInternalServerError, err.Error())
 	}
-	log.Printf("%s", buffer.String())
 	err = proto.Unmarshal(buffer.Bytes(), codeData)
 	if err != nil {
 		return c.String(http.StatusInternalServerError, err.Error())

@@ -23,6 +23,10 @@ export const WSConnect = () => {
 
 export const RWS = WSConnect();
 
+export const SetWSOnOpen = (rws: ReconnectingWebSocket, onOpen: () => void) => {
+  rws.onopen = onOpen;
+};
+
 export const SetWSOnMessage = (
   rws: ReconnectingWebSocket,
   onMessage: (evt: MessageEvent<any>) => void
