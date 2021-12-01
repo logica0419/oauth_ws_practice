@@ -14,7 +14,7 @@ import (
 func (r *Router) getIconHandler(c echo.Context) error {
 	sess, _ := session.Get("session", c)
 
-	accessToken := sess.Values["accessToken"].(string)
+	accessToken := sess.Values["accessToken"]
 	auth := context.WithValue(context.Background(), traq.ContextAccessToken, accessToken)
 
 	v, res, err := r.cli.MeApi.GetMyIcon(auth)
